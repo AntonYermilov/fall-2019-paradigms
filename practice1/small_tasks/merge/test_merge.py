@@ -2,4 +2,4 @@ from .merge import merge
 
 
 def test_merge():
-    pass
+    assert merge([1], [1]) == [1, 1]

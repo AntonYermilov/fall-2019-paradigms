@@ -1,5 +1,6 @@
 from typing import List
 
+
 """
 Задание 1.
 Дан массив целых чисел. 
@@ -67,9 +68,11 @@ def reverse_array(arr: list, l: int, r: int) -> list:
 
 
 def verbing(s: str) -> str:
-    # YOUR CODE (START)
-    return s
-    # YOUR CODE (END)
+    if len(s) < 3:
+        return s
+    if s[-3:] == 'ing':
+        return s + 'ly'
+    return s + 'ing'
 
 
 """ 
@@ -89,9 +92,10 @@ a-front + b-front + a-back + b-back,
 
 
 def front_back(a: list, b: list) -> list:
-    # YOUR CODE (START)
-    return a + b
-    # YOUR CODE (END)
+    f = lambda arr: (len(arr) + 1) // 2
+    a_front, a_back = a[:f(a)], a[f(a):]
+    b_front, b_back = b[:f(b)], b[f(b):]
+    return a_front + b_front + a_back + b_back
 
 
 """
@@ -104,12 +108,17 @@ def front_back(a: list, b: list) -> list:
 
 
 def remove_adjacent(a: list) -> list:
-    # YOUR CODE (START)
-    return a
-    # YOUR CODE (END)
+    # res = []
+    # for i in range(len(a)):
+    #     if i == 0 or a[i] != a[i - 1]:
+    #         res.append(a[i])
+    # return res
+
+    res = [x for x, y in zip(a, a[1:]) if x != y] + [a[-1]]
+    return res
 
 
-def my_test():
+def test_all():
     arr = list(range(10))
     assert transform_simple(arr, 5, 7) == [25, 36, 49]
     assert transform_list_comprehensions(arr, 5, 7) == [25, 36, 49]
@@ -133,4 +142,4 @@ def my_test():
 
 
 if __name__ == '__main__':
-    my_test()
+    test_all()
