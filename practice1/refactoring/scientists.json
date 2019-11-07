@@ -1,0 +1,7 @@
+[
+  {"first_name":  "Albert", "last_name": "Einstein", "birth_date":  "1879-03-14"},
+  {"first_name":  "Alan", "last_name": "Turing", "birth_date":  "1912-06-23"},
+  {"first_name":  "Edsger", "last_name": "Dijkstra", "birth_date":  "1930-05-11"},
+  {"first_name":  "Niels", "last_name": "Bohr", "birth_date":  "1885-10-07"},
+  {"first_name":  "Leslie", "last_name": "Lamport", "birth_date":  "1941-02-07"}
+]
