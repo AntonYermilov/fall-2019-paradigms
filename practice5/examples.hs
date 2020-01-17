@@ -5,7 +5,8 @@ import Data.Char (digitToInt, ord)
 five = 5
 
 -- Можно явно указать тип функции
--- А ещё её значение будет вычисляться каждый раз при вызове ten, по сути это просто функция вида def ten(): return five() * 2
+-- А ещё её значение будет вычисляться каждый раз при вызове ten, по сути это просто функция вида 
+-- def ten(): return five() * 2
 ten :: Int
 ten = five * 2
 
@@ -18,10 +19,12 @@ cube x = x ^ 3
 
 -- Та же функция через лямбду:
 sqr' :: Int -> Int
+-- sqr' = lambda x : x * x
 sqr' = \ x -> x * x
 
 -- Все последующие функции эквивалентны:
 add :: Int -> Int -> Int
+-- add = lambda a, b: a + b
 add a b = a + b
 add' a = \ b -> a + b 
 add'' = \ a b -> a + b
@@ -56,7 +59,7 @@ negFive' = negate 5
 printEight = print (add 3 5)
 printEight' = print $ add 3 5
 printEight'' = print (sqr (sqr 2))
-printEight''' = print $ sqr $ sqr $ 2
+printEight''' = print $ sqr $ sqr 2 -- print (sqr (sqr (2)))
 printEight'''' = (print . sqr . sqr) 2
 
 -- error!!!
@@ -85,10 +88,10 @@ factorial' n = if n /= 0
                else 1 
 
 -- helper (версия с where)
-factorial'' n = helper 1 n
-    where helper acc n = if n /= 0
-                         then helper (acc * n) (n - 1)
-                         else acc
+factorial'' n = f 1 n
+    where f acc n = if n /= 0
+                    then f (acc * n) (n - 1)
+                    else acc
 
 -- helper
 factorial''' n = 
@@ -98,7 +101,8 @@ factorial''' n =
     in helper 1 n
 
 -- guard
-factorial'''' n | n /= 0 = n * factorial (n - 1)
+factorial'''' n | n < 0 = 0
+                | n > 0 = n * factorial'''' (n - 1)
                 | otherwise = 1
 
 -- Ленивость
@@ -113,27 +117,30 @@ lazyWow = print $ first 42 undefined
 
 -- Упражнения :)
 
--- def gcd(a, b): return a if b == 0 else gcd(b, a % b)
+-- 1. def gcd(a, b): return a if b == 0 else gcd(b, a % b)
 -- Для взятия по модулю есть функция mod :)
 
 gcd :: Integral a => a -> a -> a
-gcd a b = undefined
+gcd a b | b == 0 = a
+        | otherwise = gcd b (a `mod` b)
 
--- def cond_sum(cond, n): return sum(i for i in range(1, n + 1) if cond(i)
+-- 2. def cond_sum(cond, n): return sum(i for i in range(1, n + 1) if cond(i)
 -- Пояснение: надо посчитать сумму чисел из [1, n], удовлетворяющих условию. 
 -- cond - функция-предикат, n - натуральное число
 
 condSum :: Integral a => (a -> Bool) -> a -> a
-condSum cond n = undefined
+condSum cond n | n == 0 = 0
+               | cond n = n + (condSum cond (n - 1))
+               | otherwise = condSum cond (n - 1)
 
--- def digits_count(n): return len(str(n))
+-- 3. def symbols_count(n): return len(str(n))
 -- Должно работать и для положительных, и для отрицательных чисел :)
 
-digitsCount :: Integral a => a -> Int
-digitsCount n = undefined
+digitsCount n | n < 0 = 1 + (digitsCount (negate n))
+              | n < 10 = 1
+              | otherwise = 1 + (digitsCount $ div n 10)
 
-
--- Расставьте скобочки и обратные кавычки в выражении test, чтобы оно сошлось по типам :)
+-- 4. Расставьте скобочки и обратные кавычки в выражении test, чтобы оно сошлось по типам :)
 -- Возможно, вам поможет картинка дерева вызова функций
 
 data Nat = Z | Suc Nat deriving Show
@@ -144,7 +151,7 @@ f3 :: (Nat -> Nat) -> Nat -> Nat
 f1 = undefined
 f2 = undefined
 f3 = undefined
--- test = f1 f2 f3 f2 f1 f2
+test = (f1 f2) `f3` (f2 `f1` f2)
 
 
 -- В последнем упражнении мы определили тип натуральных чисел (он же Nat)
@@ -158,7 +165,7 @@ one :: Nat
 one = Suc Z
 
 two :: Nat
-two = Suc $ Suc Z
+two = Suc (Suc Z)
 two' = Suc one
 
 -- Определим операции сложения и вычитания для натуральных чисел
@@ -168,6 +175,10 @@ two' = Suc one
 a @+ Z = a
 a @+ Suc b = Suc a @+ b
 
+-- Suc Z + Suc Suc Z
+-- Suc Suc Z + Suc Z
+-- Suc Suc Suc Z + Z
+
 (@-) :: Nat -> Nat -> Nat
 Z @- _ = Z
 a @- Z = a
@@ -175,19 +186,32 @@ Suc a @- Suc b = a @- b
 
 -- И снова упражнения :)
 
--- Реализуйте умножение натуральных чисел через сложение
+-- 1. Реализуйте умножение натуральных чисел через сложение
 -- Hint: может понадобиться функция-helper с аккумулятором
 (@*) :: Nat -> Nat -> Nat
-(@*) = undefined
+a @* b = let helper acc _ Z = acc
+             helper acc a (Suc b) = helper (acc @+ a) a b
+         in helper Z a b
 
--- Аналогично реализуйте деление через вычитание
+-- 2. Реализуйте возведение в степень через умножение
+(@^) :: Nat -> Nat -> Nat
+a @^ b = let helper acc _ Z = acc
+             helper acc a (Suc b) = helper (acc @* a) a b
+         in helper (Suc Z) a b
+
+-- 3. Реализуйте операцию сравнения двух натуральных чисел
+(@<) :: Nat -> Nat -> Bool
+_ @< Z = False
+Z @< _ = True
+(Suc a) @< (Suc b) = a @< b
+
+-- 4. Реализуйте деление через вычитание и сравнение
 -- Что будет при попытке делить на ноль? :)
 (@/) :: Nat -> Nat -> Nat
-(@/) = undefined
+a @/ b | not (Z @< b) = a
+       | a @< b = Z
+       | otherwise = Suc $ (a @- b) @/ b
 
--- Реализуйте возведение в степень через умножение
-(@^) :: Nat -> Nat -> Nat
-(@^) = undefined
 
 
 -- Определим тип данных "список" аналогично тому, как мы определяли натуральные числа
@@ -219,8 +243,9 @@ simpleList' = [1,2,3]
 
 simpleList'' :: [Int]
 simpleList'' = 1:2:3:[]
+simpleList'''' = (:) 1 ((:) 2 [])
 
-simpleList''' = (1::Int):2:3:[]
+simpleList''' = 1:(2::Float):3:[]
 
 -- head и tail (есть уже встроенные, но реализуем свои)
 head' :: [a] -> Maybe a
@@ -240,8 +265,8 @@ whoami (x : _ : xs) = x : (whoami xs)
 -- take - взять первые <= n элементов (тоже есть встроенный, но...)
 take' :: Int -> [a] -> [a]
 take' _ [] = []
-take' 0 xs = xs
-take' n (x : xs) = x : take (n - 1) xs
+take' 0 xs = []
+take' n (x : xs) = x : take' (n - 1) xs
 
 -- Несколько полезных функций для работы со списками
 
@@ -300,39 +325,44 @@ listStr = show [1,2,3]
 
 -- Упражнения на списки
 
--- Реализуйте функцию, переводящую число в список цифр
+-- 1. Реализуйте функцию, переводящую число в список цифр
 -- Hint: могут помочь функции show и digitToInt
 toDigits :: Int -> [Int]
-toDigits = undefined
+toDigits = map digitToInt . show   -- аналогично toDigits n = map digitToInt (show n)
 
--- Реализуйте функцию, вычисляющую количество цифр в числе
+-- 2. Реализуйте функцию, вычисляющую количество цифр в числе
 numberOfDigits :: Int -> Int
-numberOfDigits = undefined
+numberOfDigits = length . show     -- аналогично numberOfDigits n = length (show n)
 
--- Реализуйте функцию, вычисляющую сумму цифр числа
+-- 3. Реализуйте функцию, вычисляющую сумму цифр числа
 sumOfDigits :: Int -> Int
-sumOfDigits = undefined
+sumOfDigits = sum . toDigits       -- аналогично sumOfDigits n = sum (toDigits n)
 
--- Реализуйте функцию drop, которая  выбросывает из списка первые <= n элементов
+-- 4. Реализуйте функцию drop, которая  выбросывает из списка первые <= n элементов
 drop' :: Int -> [a] -> [a]
-drop' = undefined
+drop' _ [] = []
+drop' 0 xs = xs
+drop' n (x : xs) = drop' (n - 1) xs
 
--- Реализуйте функцию, проверяющую список на палиндромность
-isPalindrome :: [a] -> Bool
-isPalindrome = undefined
+-- 5. Реализуйте функцию, проверяющую список на палиндромность
+isPalindrome :: Eq a => [a] -> Bool
+isPalindrome xs = xs == (reverse xs)
 
--- Реализуйте функцию, разделяющую список на две части из k и n - k элементов (n - длина списка)
+-- 6. Реализуйте функцию, разделяющую список на две части из k и n - k элементов (n - длина списка)
 splitAtIndex :: Int -> [a] -> ([a], [a])
-splitAtIndex = undefined
+splitAtIndex k xs = (take k xs, drop k xs)
 
--- Реализуйте функцию, делающую циклический сдвиг массива влево на k позиций
+-- 7. Реализуйте функцию, делающую циклический сдвиг массива влево на k позиций
 -- К примеру, rotate 2 [1,2,3,4,5] == [3,4,5,1,2]
 rotate :: Int -> [a] -> [a]
-rotate = undefined
+rotate k xs = rotate' (k `mod` (length xs)) xs
+    where rotate' k xs = (drop k xs) ++ (take k xs)
 
--- Реализуйте функцию, которая выводит элементы списка через разделитель " | "
+-- 8. Реализуйте функцию, которая выводит элементы списка через разделитель " | "
 prettyPrintList :: Show a => [a] -> String
-prettyPrintList xs = undefined
+prettyPrintList [] = ""
+prettyPrintList [x] = show x
+prettyPrintList (x : xs) = (show x) ++ " | " ++ (prettyPrintList xs)
 
 
 -- И ещё чуть-чуть про data
@@ -340,7 +370,7 @@ prettyPrintList xs = undefined
 -- В домашке вам потребуется работать с типом File, который определён следующим образом:
 data File = File {name :: String, content :: String}
 
--- name и content - это не поля объекта, а ффункции, которым на вход можно передать элемент типа File, а на выходе получить соответствующее поле
+-- name и content - это не поля объекта, а функции, которым на вход можно передать элемент типа File, а на выходе получить соответствующее поле
 -- Но есть и другой способ получить эти значения - pattern matching
 
 file = File "hello.txt" "Hello World"
