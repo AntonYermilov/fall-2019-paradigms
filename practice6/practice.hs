@@ -110,7 +110,6 @@ type Context = [Variable]
 -- Реализуйте функцию, которая по контексту и названию переменной возвращает её значение
 lookup :: Context -> String -> Int
 lookup = undefined
-                  | otherwise   = lookup xs k
 
 -- Реализуйте функцию, которая добавляет переменную в контекст (или обновляет существующую, если переменная уже в контексте)
 update :: Context -> Variable -> Context
