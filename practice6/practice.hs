@@ -26,6 +26,8 @@ h2 = two @+ infinite'
 threeSameElements x = take 3 $ repeat x
 
 -- Внезапный вопрос: в чём разница между foldl и foldr?
+-- f x1 (f x2 (f x3 (f x4 ...)))
+-- f (f (f (f ( ... f x1) x2) x3) ...)
 f1 = take 10 $ foldr (\ x ini -> x^2 : ini) [] (iterate (+ 1) 0)
 f2 = take 10 $ foldl (\ ini x -> ini ++ [x^2]) [] (iterate (+ 1) 0)
 
@@ -34,7 +36,7 @@ isPrime :: Int -> Bool
 isPrime n = (length $ filter (== 0) $ take n $ map (n `mod`) [1..]) == 2
 
 getPrimes :: Int -> [Int]
-getPrimes n = undefined
+getPrimes n = take n $ filter isPrime [1..]
 
 -- type - просто синоним для типа
 type String = [Char]
@@ -68,23 +70,46 @@ simpleTree = Node 5 [Node 2 [Leaf 4, Leaf 8], Leaf 1, Node 3 [Leaf 9]]
 
 -- treeMap: применить функцию ко всем элементам дерева и вернуть дерево с той же структурой
 -- Exercise
+
 treeMap :: (a -> b) -> Tree a -> Tree b
-treeMap = undefined
+treeMap _ Empty = Empty
+treeMap f (Leaf x) = Leaf (f x)
+treeMap f (Node x ys) = Node (f x) (map (treeMap f) ys)
+
+instance Functor Tree where
+    fmap = treeMap
 
 -- down: [5, 2, 4, 8, 1, 3, 9]
 -- Exercise
 down :: Tree a -> [a]
-down = undefined
+down Empty = []
+down (Leaf x) = [x]
+down (Node x ys) = x : concat (map down ys)
 
 -- up: [4, 8, 2, 1, 9, 3, 5]
 -- Exercise
 up :: Tree a -> [a]
-up = undefined
+up Empty = []
+up (Leaf x) = [x]
+up (Node x ys) = concat (map up ys) ++ [x]
+up (Node x ys) = foldr (++) [x] (map up ys)
 
 -- foldr :: (a -> b -> b) -> b -> t a -> b
+-- [x1, x2, x3] -> f x1 (f x2 (f x3 ini))
 -- Exercise
+-- (a -> b -> c) -> (b -> a -> c)
+--
+-- foldr f :: b -> Tree a -> b
+-- flip $ foldr f :: Tree a -> b -> b
+-- ini :: b
+-- ys :: [Tree a]
+
 instance Foldable Tree where
-    foldr = undefined
+    foldr f ini Empty = ini
+    foldr f ini (Leaf x) = f x ini
+    foldr f ini (Node x ys) = f x (foldr (flip $ foldr f) ini ys)
+
+-- foldr (++) [] simpleTree == [5, 2, 4, 8, 1, 3, 9]
 
 
 
@@ -109,11 +134,15 @@ type Context = [Variable]
 
 -- Реализуйте функцию, которая по контексту и названию переменной возвращает её значение
 lookup :: Context -> String -> Int
-lookup = undefined
+lookup [] _ = undefined
+lookup (x : xs) var | name x == var = value x
+                    | otherwise     = lookup xs var
 
 -- Реализуйте функцию, которая добавляет переменную в контекст (или обновляет существующую, если переменная уже в контексте)
 update :: Context -> Variable -> Context
-update = undefined
+update [] var = [var]
+update (x : xs) var | name x == name var = var : xs
+                    | otherwise          = x : update xs var
 
 -- Введём теперь ещё несколько определений.
 -- Начёнм с определения бинарной операции. В текущем варианте обойдёмся лишь тремя следующими операциями:
@@ -149,7 +178,9 @@ simpleExpression = BinaryOperation Sub (BinaryOperation Add (BinaryOperation Mul
 -- Exercise
 
 evaluate :: Context -> Expression -> Int
-evaluate = undefined
+evaluate ctx (Number x) = x
+evaluate ctx (Reference r) = lookup ctx r
+evaluate ctx (BinaryOperation op e1 e2) = toBinaryFunction op (evaluate ctx e1) (evaluate ctx e2)
 
 -- А что, если мы теперь хотим добавить операции присваивания, меняющие контекст?
 
@@ -169,14 +200,22 @@ instance Show Expression' where
 -- a * 2 + b - 3
 setA = Assignment' "a" (BinaryOperation' Add (Number' 1) (Number' 4))
 setB = Assignment' "b" (Number' 2)
-simpleExpression' = BinaryOperation' Sub (BinaryOperation' Add (BinaryOperation' Mul (Reference' "a") (Number' 2)) (Reference' "b")) (Number' 3)
+simpleExpression' = Assignment' "c" (BinaryOperation' Sub (BinaryOperation' Add (BinaryOperation' Mul (Reference' "a") (Number' 2)) (Reference' "b")) (Number' 3))
 
 -- Теперь мы можем перейти к реализации вычисления наших выражений :)
 -- Exercise (2)
 
 evaluate' :: Context -> Expression' -> (Int, Context)
-evaluate' = undefined
+evaluate' ctx (Number' x) = (x, ctx)
+evaluate' ctx (Reference' r) = (lookup ctx r, ctx)
+evaluate' ctx (BinaryOperation' op e1 e2) =
+    let (lvalue, ctx')  = evaluate' ctx e1
+        (rvalue, ctx'') = evaluate' ctx' e2
+    in (toBinaryFunction op lvalue rvalue, ctx'')
+evaluate' ctx (Assignment' var e) =
+    let (value, ctx') = evaluate' ctx e
+        ctx'' = update ctx' (Variable var value)
+    in (value, ctx'')
 
 evaluateProgram :: Context -> [Expression'] -> (Int, Context)
-evaluateProgram = undefined
-
+evaluateProgram ctx es = foldl (\ ini e -> evaluate' (snd ini) e) (0, ctx) es
